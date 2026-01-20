@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Inventaire Rapide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .item-card { transition: all 0.2s; }
+        input[type="number"] { -moz-appearance: textfield; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen pb-20">
+
+    <div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
+        <h1 class="text-xl font-bold text-center">Gestion d'Inventaire</h1>
+        <input type="text" id="searchInput" oninput="renderItems()" placeholder="Chercher code ou nom (ex: 937)..." 
+               class="w-full mt-3 p-2 rounded-lg text-black focus:outline-none shadow-inner">
+    </div>
+
+    <div id="itemList" class="p-4 space-y-3"></div>
+
+    <div class="fixed bottom-0 left-0 right-0 bg-white p-4 border-t shadow-lg flex gap-2">
+        <input type="text" id="newItemDesignation" placeholder="[Code] Désignation" 
+               class="flex-1 border p-2 rounded text-sm">
+        <button onclick="addItem()" class="bg-green-500 text-white px-4 py-2 rounded font-bold">+</button>
+    </div>
+
+    <script>
+        let inventory = JSON.parse(localStorage.getItem('myInventory')) || [
+            { id: Date.now(), designation: "[937] AMERICAIN NOIR", qty: 0 }
+        ];
+
+        function save() { localStorage.setItem('myInventory', JSON.stringify(inventory)); }
+
+        function addItem() {
+            const input = document.getElementById('newItemDesignation');
+            if (input.value.trim() === "") return;
+            inventory.unshift({ id: Date.now(), designation: input.value.trim(), qty: 0 });
+            input.value = "";
+            save();
+            renderItems();
+        }
+
+        function deleteItem(id) {
+            if(confirm("Supprimer cet article ?")) {
+                inventory = inventory.filter(item => item.id !== id);
+                save();
+                renderItems();
+            }
+        }
+
+        function updateQty(id, delta) {
+            const item = inventory.find(i => i.id === id);
+            if (item) {
+                item.qty = Math.max(0, item.qty + delta);
+                save();
+                renderItems();
+            }
+        }
+
+        function setQty(id, value) {
+            const item = inventory.find(i => i.id === id);
+            if (item) { item.qty = parseInt(value) || 0; save(); }
+        }
+
+        function renderItems() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const listElement = document.getElementById('itemList');
+            listElement.innerHTML = '';
+            const filtered = inventory.filter(item => item.designation.toLowerCase().includes(searchTerm));
+            filtered.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col gap-3";
+                div.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <span class="font-medium text-gray-800 flex-1">${item.designation}</span>
+                        <button onclick="deleteItem(${item.id})" class="text-red-400 text-sm ml-2">✕</button>
+                    </div>
+                    <div class="flex items-center justify-between bg-gray-50 p-2 rounded-lg">
+                        <button onclick="updateQty(${item.id}, -1)" class="bg-gray-200 w-10 h-10 rounded-full text-xl font-bold">-</button>
+                        <input type="number" value="${item.qty}" onchange="setQty(${item.id}, this.value)"
+                               class="w-20 text-center bg-transparent text-xl font-bold text-blue-600 focus:outline-none">
+                        <button onclick="updateQty(${item.id}, 1)" class="bg-blue-100 text-blue-600 w-10 h-10 rounded-full text-xl font-bold">+</button>
+                    </div>`;
+                listElement.appendChild(div);
+            });
+        }
+        renderItems();
+    </script>
+</body>
+</html>
