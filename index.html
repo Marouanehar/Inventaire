@@ -9,6 +9,10 @@
     <style>
         .suggestion-box { max-height: 300px; overflow-y: auto; z-index: 100; }
         .loader-overlay { background: rgba(255,255,255,0.9); backdrop-filter: blur(5px); }
+        /* Masquer les flèches du champ number pour un look plus propre */
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen pb-40">
@@ -139,27 +143,34 @@
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex justify-between">
                         <span class="font-bold text-slate-800 text-sm">${item.designation}</span>
-                        <button onclick="deleteItem(${item.id})" class="text-red-300">✕</button>
+                        <button onclick="deleteItem(${item.id})" class="text-red-300 font-bold text-lg">✕</button>
                     </div>
-                    <div class="text-[10px] text-gray-400 font-bold uppercase mb-3">Unité: ${item.unit}</div>
-                    <div class="flex items-center justify-between bg-slate-50 rounded-xl p-2">
-                        <button onclick="changeQty(${item.id}, -1)" class="w-12 h-12 bg-white rounded-lg shadow text-2xl">-</button>
-                        <input type="number" value="${item.qty}" onchange="updateQty(${item.id}, this.value)" class="w-20 text-center text-2xl font-black text-blue-800 bg-transparent">
-                        <button onclick="changeQty(${item.id}, 1)" class="w-12 h-12 bg-blue-600 text-white rounded-lg shadow text-2xl">+</button>
+                    <div class="text-[10px] text-gray-400 font-bold uppercase mb-2">Unité: ${item.unit}</div>
+                    
+                    <div class="bg-slate-50 rounded-xl p-2 border-2 border-transparent focus-within:border-blue-500 transition-colors">
+                        <input type="number" 
+                               value="${item.qty}" 
+                               oninput="updateQty(${item.id}, this.value)" 
+                               placeholder="Saisir la quantité..."
+                               class="w-full text-center text-3xl font-black text-blue-800 bg-transparent outline-none">
                     </div>
                 </div>
             `).join('');
         }
 
-        function changeQty(id, diff) {
+        // Nouvelle fonction pour mettre à jour et sauvegarder automatiquement
+        function updateQty(id, newValue) {
             const item = inventory.find(i => i.id === id);
-            item.qty = Math.max(0, parseFloat((item.qty + diff).toFixed(2)));
-            localStorage.setItem('inv_data', JSON.stringify(inventory));
-            renderItems();
+            if (item) {
+                // Si le champ est vide, on stocke 0 par défaut
+                item.qty = newValue === '' ? 0 : parseFloat(newValue);
+                // Sauvegarde immédiate dans le navigateur
+                localStorage.setItem('inv_data', JSON.stringify(inventory));
+            }
         }
 
         function deleteItem(id) {
-            if(confirm("Supprimer ?")) {
+            if(confirm("Supprimer cet article de la liste ?")) {
                 inventory = inventory.filter(i => i.id !== id);
                 localStorage.setItem('inv_data', JSON.stringify(inventory));
                 renderItems();
